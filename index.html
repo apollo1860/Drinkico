@@ -245,6 +245,7 @@
       <tbody id="leaderBody"></tbody>
     </table>
     <button class="primary" id="newRoundBtn">Neue Runde</button>
+    <button class="secondary" id="newRoomBtn">Neuen Raum starten</button>
   </div>
 </div>
 
@@ -418,7 +419,7 @@
 
   /* ---------------- Zentrale Reaktion auf Raum-Änderungen ---------------- */
   function onRoomUpdate(room){
-    if(room.phase==="lobby"){ renderLobby(room); }
+    if(room.phase==="lobby"){ matchStarted=false; renderLobby(room); }
     else if(room.phase==="reveal"){ renderReveal(room); }
     else if(room.phase==="countdown"){
       if(!matchStarted){ matchStarted=true; startMatchSync(room); }
@@ -428,7 +429,7 @@
   }
 
   /* ---------------- Lobby: Wette + Bestätigung ---------------- */
-  let selectedPick=null, stake=3, curOdds=null;
+  let selectedPick=null, stake=3, curOdds=null, myWasConfirmed=false;
 
   document.querySelectorAll("#s-lobby .odd-btn").forEach(btn=>{
     btn.addEventListener("click",()=>{
@@ -510,6 +511,27 @@
     fillMatchupAndOdds(room);
 
     const players=room.players||{};
+
+    // Eigenen Sperr-/Freigabe-Zustand IMMER aus den Raumdaten ableiten (nicht nur lokal beim
+    // Klickenden von "Neue Runde") — sonst bleiben andere Mitspieler ab Runde 2 in der
+    // Ansicht von Runde 1 gesperrt hängen und können weder tippen noch bestätigen.
+    const me=players[uid];
+    const myConfirmedNow=!!(me && me.confirmedBet);
+    if(myConfirmedNow){
+      selectedPick=me.pick;
+      document.querySelectorAll("#s-lobby .odd-btn").forEach(b=>{
+        b.classList.toggle("selected", b.dataset.pick===me.pick);
+        b.style.pointerEvents="none";
+      });
+      $("confirmBetBtn").disabled=true;
+      $("stakeInput").disabled=true;
+      $("lobbyWait").style.display="block";
+    } else if(myWasConfirmed){
+      // Übergang "bestätigt" -> "unbestätigt" = neue Runde hat begonnen: UI wieder freigeben
+      resetBetControls();
+    }
+    myWasConfirmed=myConfirmedNow;
+
     const list=$("lobbyPlist"); list.innerHTML="";
     let allConfirmed=true, count=0;
     Object.keys(players).forEach(pid=>{
@@ -547,6 +569,11 @@
       tr.innerHTML=`<td>${p.name}${pid===uid?" (du)":""}</td><td>${pickLabel(p.pick)}</td><td>${p.stake}</td><td>${gain}</td>`;
       body.appendChild(tr);
     });
+
+    const myConfirmedReveal=!!(players[uid] && players[uid].confirmedReveal);
+    $("revealNextBtn").style.display=myConfirmedReveal?"none":"block";
+    $("revealWait").style.display=myConfirmedReveal?"block":"none";
+
     if(allConfirmed){
       // Nur einmal auslösen: matchStartAt setzen, falls noch nicht vorhanden
       if(!room.matchStartAt){
@@ -883,13 +910,13 @@
         phase:"lobby", matchStartAt:null, leaderboardApplied:false,
         players:resetPlayers
       });
-      matchStarted=false;
-      selectedPick=null; $("confirmBetBtn").disabled=true;
-      document.querySelectorAll("#s-lobby .odd-btn").forEach(b=>{b.classList.remove("selected"); b.style.pointerEvents="auto";});
-      $("stakeInput").disabled=false; $("stakeInput").value=3; stake=3;
-      $("lobbyWait").style.display="none";
-      $("revealNextBtn").style.display="block"; $("revealWait").style.display="none";
     });
+  });
+
+  $("newRoomBtn").addEventListener("click",()=>{
+    // tipico_lastroom bleibt in localStorage erhalten (wird beim nächsten Betreten eines
+    // Raums vorausgefüllt) — einfach neu laden, das bringt uns sauber zur Moduswahl zurück.
+    location.reload();
   });
 
 })();
