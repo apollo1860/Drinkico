@@ -3,21 +3,21 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tipico Live Multiplayer – Der Polnische</title>
+<title>Drinkico Multiplayer – Der Polnische</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
 <style>
   :root{
-    --bg:#0a1622; --card:#101f2e; --card2:#152838; --line:#213748;
-    --red:#e2001a; --red-dark:#a80013; --green:#0fae5c; --text:#eef4f8; --muted:#7f96a8;
+    --bg:#f4f4f4; --card:#ffffff; --card2:#f2f2f3; --line:#e2e2e4;
+    --red:#e2001a; --red-dark:#a80013; --green:#0fae5c; --text:#1a1a1a; --muted:#767a80;
     --home-color:#e2001a; --away-color:#2563eb;
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
   body{
-    background:radial-gradient(circle at 50% -10%, #16283a 0%, var(--bg) 55%);
+    background:var(--bg);
     color:var(--text); font-family:'Inter',sans-serif;
     min-height:100vh; display:flex; justify-content:center; padding:18px 12px 40px;
   }
@@ -25,7 +25,7 @@
   h1{font-family:'Oswald',sans-serif;font-weight:700;letter-spacing:.5px;font-size:22px;margin:0 0 4px;display:flex;align-items:center;gap:10px;}
   h1 .badge{background:var(--red);color:#fff;font-size:11px;padding:3px 8px;border-radius:4px;letter-spacing:1px;font-family:'Oswald',sans-serif;}
   .sub{color:var(--muted);font-size:13px;margin-bottom:18px;}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px;box-shadow:0 2px 10px rgba(0,0,0,.05);}
   .screen{display:none;}
   .screen.active{display:block;}
 
@@ -65,7 +65,8 @@
   .odd-btn:active{transform:scale(.97);}
   .odd-btn .lbl{font-size:11px;color:var(--muted);letter-spacing:.5px;margin-bottom:4px;}
   .odd-btn .val{font-family:'Oswald',sans-serif;font-weight:700;font-size:19px;color:var(--red);}
-  .odd-btn.selected{border-color:var(--red);background:linear-gradient(180deg,#25202a,var(--card2));box-shadow:0 0 0 1px var(--red) inset;}
+  .odd-btn.selected{border-color:var(--red);background:var(--red);box-shadow:0 0 0 1px var(--red) inset;}
+  .odd-btn.selected .lbl{color:rgba(255,255,255,.85);}
   .odd-btn.selected .val{color:#fff;}
 
   .plist{display:flex;flex-direction:column;gap:8px;margin:14px 0;}
@@ -130,11 +131,19 @@
 </head>
 <body>
 <div id="app">
-  <h1>⚽ Tipico Live <span class="badge">MULTIPLAYER</span></h1>
-  <div class="sub">Alle im selben Raum sehen dasselbe Spiel, dieselben Aktionen, dasselbe Ergebnis.</div>
+  <h1>⚽ Drinkico</h1>
+  <div class="sub">Wette auf den Ausgang – bei Gewinn verteilst du die Schlücke, bei Verlust trinkst du sie selbst.</div>
+
+  <!-- MODUS -->
+  <div class="screen active card" id="s-mode">
+    <label>Wie möchtet ihr spielen?</label>
+    <button class="primary" id="modeSingleBtn">Einzelspieler</button>
+    <button class="secondary" id="modeMultiBtn">Multiplayer (Raum mit Freunden)</button>
+    <div class="hint" style="margin-top:12px;">Multiplayer: alle im selben Raum sehen dasselbe Spiel, dieselben Aktionen, dasselbe Ergebnis.</div>
+  </div>
 
   <!-- NAME -->
-  <div class="screen active card" id="s-name">
+  <div class="screen card" id="s-name">
     <label for="nameInput">Dein Name</label>
     <input id="nameInput" type="text" maxlength="20" placeholder="z.B. Anton">
     <button class="primary" id="nameNextBtn">Weiter</button>
@@ -153,8 +162,11 @@
 
   <!-- LOBBY (Wette platzieren) -->
   <div class="screen card" id="s-lobby">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-      <span style="font-family:'Oswald',sans-serif;font-size:13px;color:var(--muted);">Raum: <b id="lobbyCode" style="color:#fff;"></b></span>
+    <div id="lobbyCodeRow" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+      <span style="font-family:'Oswald',sans-serif;font-size:13px;color:var(--muted);">Raum: <b id="lobbyCode" style="color:var(--text);"></b></span>
+    </div>
+    <div style="text-align:right;margin:-6px 0 10px;">
+      <a href="#" id="switchModeLink" style="font-size:12px;color:var(--muted);text-decoration:underline;">Modus wechseln</a>
     </div>
     <div class="matchup">
       <div class="team home"><div class="dot" id="lHomeInit">–</div><div class="name" id="lHomeName">–</div></div>
@@ -179,9 +191,12 @@
     <label for="stakeInput">Einsatz (Schlücke)</label>
     <input id="stakeInput" type="number" min="1" max="20" value="3">
     <button class="primary" id="confirmBetBtn" disabled>Wette bestätigen</button>
+    <button class="secondary" id="spReshuffleBtn" style="display:none;">Andere Teams</button>
     <div class="waiting" id="lobbyWait" style="display:none;"><span class="spin"></span>Warte auf die anderen…</div>
-    <h2 class="sec">Mitspieler</h2>
-    <div class="plist" id="lobbyPlist"></div>
+    <div id="lobbyPlistSection">
+      <h2 class="sec">Mitspieler</h2>
+      <div class="plist" id="lobbyPlist"></div>
+    </div>
   </div>
 
   <!-- REVEAL -->
@@ -332,7 +347,20 @@
     $(id).classList.add("active");
   }
 
-  /* ---------------- Screen 1: Name ---------------- */
+  /* ---------------- Screen 0: Modus ---------------- */
+  let mode=null; // 'single' | 'multi'
+  let spRoom=null; // lokaler "Raum" fürs Einzelspieler-Match, kein Firebase
+
+  $("modeSingleBtn").addEventListener("click",()=>{
+    mode="single";
+    startSingleplayerSetup();
+  });
+  $("modeMultiBtn").addEventListener("click",()=>{
+    mode="multi";
+    showScreen("s-name");
+  });
+
+  /* ---------------- Screen 1: Name (nur Multiplayer) ---------------- */
   $("nameInput").value=myName;
   $("nameNextBtn").addEventListener("click",()=>{
     const v=$("nameInput").value.trim();
@@ -414,6 +442,13 @@
 
   $("confirmBetBtn").addEventListener("click",()=>{
     if(!selectedPick) return;
+    if(mode==="single"){
+      spRoom.players[uid]={name:"Du", pick:selectedPick, stake:stake, confirmedBet:true};
+      spRoom.matchStartAt=Date.now()+3200;
+      matchStarted=true;
+      startMatchSync(spRoom);
+      return;
+    }
     db.ref(`rooms/${roomCode}/players/${uid}`).update({
       name:myName, pick:selectedPick, stake:stake, confirmedBet:true
     });
@@ -430,9 +465,15 @@
     return {"1":"Heim","X":"Unentschieden","2":"Auswärts","O25":"Über 2,5","U25":"Unter 2,5","O35":"Über 3,5","U35":"Unter 3,5"}[pick]||"–";
   }
 
-  function renderLobby(room){
-    showScreen("s-lobby");
-    $("lobbyCode").textContent=roomCode;
+  function resetBetControls(){
+    selectedPick=null;
+    document.querySelectorAll("#s-lobby .odd-btn").forEach(b=>{b.classList.remove("selected"); b.style.pointerEvents="auto";});
+    $("confirmBetBtn").disabled=true;
+    $("stakeInput").disabled=false; $("stakeInput").value=3; stake=3;
+    $("lobbyWait").style.display="none";
+  }
+
+  function fillMatchupAndOdds(room){
     $("lHomeName").textContent=room.home.name; $("lAwayName").textContent=room.away.name;
     $("lHomeInit").textContent=initials(room.home.name); $("lAwayInit").textContent=initials(room.away.name);
     const c=teamColors(room.home,room.away);
@@ -442,6 +483,31 @@
     $("lOdd1").textContent=room.odds.h.toFixed(2); $("lOddX").textContent=room.odds.x.toFixed(2); $("lOdd2").textContent=room.odds.a.toFixed(2);
     $("lOddO25").textContent=room.odds.o25.toFixed(2); $("lOddU25").textContent=room.odds.u25.toFixed(2);
     $("lOddO35").textContent=room.odds.o35.toFixed(2); $("lOddU35").textContent=room.odds.u35.toFixed(2);
+  }
+
+  /* ---------------- Einzelspieler: lokale Lobby ohne Firebase ---------------- */
+  function startSingleplayerSetup(){
+    const m=drawMatch();
+    spRoom={home:m.home, away:m.away, odds:m.odds, seed:m.seed, players:{}};
+    resetBetControls();
+    $("confirmBetBtn").textContent="Wette platzieren";
+    $("lobbyCodeRow").style.display="none";
+    $("lobbyPlistSection").style.display="none";
+    $("spReshuffleBtn").style.display="block";
+    fillMatchupAndOdds(spRoom);
+    showScreen("s-lobby");
+  }
+  $("spReshuffleBtn").addEventListener("click", startSingleplayerSetup);
+  $("switchModeLink").addEventListener("click",(e)=>{ e.preventDefault(); location.reload(); });
+
+  function renderLobby(room){
+    showScreen("s-lobby");
+    $("confirmBetBtn").textContent="Wette bestätigen";
+    $("lobbyCodeRow").style.display="flex";
+    $("lobbyPlistSection").style.display="block";
+    $("spReshuffleBtn").style.display="none";
+    $("lobbyCode").textContent=roomCode;
+    fillMatchupAndOdds(room);
 
     const players=room.players||{};
     const list=$("lobbyPlist"); list.innerHTML="";
@@ -735,12 +801,23 @@
     if(won){ box.className="outcome win"; box.textContent=`Gewonnen! Verteile ${amount} Schlücke (Quote ${myOdd.toFixed(2)}).`; }
     else{ box.className="outcome lose"; box.textContent=`Verloren! Trinke ${myStake} Schlücke selbst.`; }
 
-    db.ref(`rooms/${roomCode}/players/${uid}/result`).set({pick:myPick,stake:myStake,odd:myOdd,won,amount});
     showScreen("s-result");
-    $("resultNextBtn").style.display="block"; $("resultWait").style.display="none";
+    $("resultWait").style.display="none";
+    $("resultNextBtn").style.display="block";
+
+    if(mode==="single"){
+      $("resultNextBtn").textContent="Neue Wette";
+      return;
+    }
+    $("resultNextBtn").textContent="Bestätigen";
+    db.ref(`rooms/${roomCode}/players/${uid}/result`).set({pick:myPick,stake:myStake,odd:myOdd,won,amount});
   }
 
   $("resultNextBtn").addEventListener("click",()=>{
+    if(mode==="single"){
+      startSingleplayerSetup();
+      return;
+    }
     db.ref(`rooms/${roomCode}/players/${uid}/confirmedResult`).set(true);
     $("resultNextBtn").style.display="none";
     $("resultWait").style.display="block";
