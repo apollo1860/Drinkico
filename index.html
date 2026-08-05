@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tipico Live Multiplayer – Der Polnische</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
+<style>
+  :root{
+    --bg:#0a1622; --card:#101f2e; --card2:#152838; --line:#213748;
+    --red:#e2001a; --red-dark:#a80013; --green:#0fae5c; --text:#eef4f8; --muted:#7f96a8;
+    --home-color:#e2001a; --away-color:#2563eb;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:radial-gradient(circle at 50% -10%, #16283a 0%, var(--bg) 55%);
+    color:var(--text); font-family:'Inter',sans-serif;
+    min-height:100vh; display:flex; justify-content:center; padding:18px 12px 40px;
+  }
+  #app{width:100%;max-width:760px;}
+  h1{font-family:'Oswald',sans-serif;font-weight:700;letter-spacing:.5px;font-size:22px;margin:0 0 4px;display:flex;align-items:center;gap:10px;}
+  h1 .badge{background:var(--red);color:#fff;font-size:11px;padding:3px 8px;border-radius:4px;letter-spacing:1px;font-family:'Oswald',sans-serif;}
+  .sub{color:var(--muted);font-size:13px;margin-bottom:18px;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px;}
+  .screen{display:none;}
+  .screen.active{display:block;}
+
+  input[type=text],input[type=number]{
+    width:100%;background:var(--card2);border:1.5px solid var(--line);border-radius:8px;
+    color:var(--text);padding:10px;font-size:15px;font-family:'Inter',sans-serif;margin-bottom:12px;
+  }
+  input:focus{outline:none;border-color:var(--red);}
+  label{font-size:13px;color:var(--muted);display:block;margin-bottom:6px;}
+  button.primary{
+    width:100%;background:var(--red);color:#fff;border:none;border-radius:10px;padding:13px;
+    font-family:'Oswald',sans-serif;font-size:15px;font-weight:600;letter-spacing:.5px;cursor:pointer;
+  }
+  button.primary:disabled{background:#33404c;color:var(--muted);cursor:not-allowed;}
+  button.primary:active:not(:disabled){background:var(--red-dark);}
+  button.secondary{
+    width:100%;background:transparent;color:var(--text);border:1.5px solid var(--line);border-radius:10px;
+    padding:12px;font-family:'Oswald',sans-serif;font-size:14px;font-weight:600;cursor:pointer;margin-top:10px;
+  }
+  .row{display:flex;gap:10px;}
+  .row > *{flex:1;}
+  .hint{font-size:12px;color:var(--muted);margin:-4px 0 12px;}
+  .err{color:#ff5a6a;font-size:13px;margin:-4px 0 12px;min-height:0;}
+
+  .matchup{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px;}
+  .team{flex:1;text-align:center;}
+  .team .dot{width:34px;height:34px;border-radius:50%;margin:0 auto 6px;display:flex;align-items:center;justify-content:center;font-family:'Oswald',sans-serif;font-weight:600;font-size:13px;color:#fff;}
+  .team.home .dot{background:var(--home-color);}
+  .team.away .dot{background:var(--away-color);}
+  .team .name{font-family:'Oswald',sans-serif;font-size:14px;font-weight:600;line-height:1.15;}
+  .vs{font-family:'Oswald',sans-serif;color:var(--muted);font-size:13px;padding:0 6px;}
+
+  .odds-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px;}
+  .odds-row2{grid-template-columns:1fr 1fr;}
+  .market-lbl{font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:1px;color:var(--muted);margin:-6px 0 8px;}
+  .odd-btn{background:var(--card2);border:1.5px solid var(--line);border-radius:10px;padding:10px 6px;text-align:center;cursor:pointer;color:var(--text);transition:.12s;-webkit-tap-highlight-color:transparent;}
+  .odd-btn:active{transform:scale(.97);}
+  .odd-btn .lbl{font-size:11px;color:var(--muted);letter-spacing:.5px;margin-bottom:4px;}
+  .odd-btn .val{font-family:'Oswald',sans-serif;font-weight:700;font-size:19px;color:var(--red);}
+  .odd-btn.selected{border-color:var(--red);background:linear-gradient(180deg,#25202a,var(--card2));box-shadow:0 0 0 1px var(--red) inset;}
+  .odd-btn.selected .val{color:#fff;}
+
+  .plist{display:flex;flex-direction:column;gap:8px;margin:14px 0;}
+  .prow{display:flex;align-items:center;justify-content:space-between;background:var(--card2);border-radius:8px;padding:9px 12px;font-size:13.5px;}
+  .prow .pname{font-family:'Oswald',sans-serif;font-weight:600;}
+  .prow .pstatus{font-size:12px;color:var(--muted);}
+  .prow .pstatus.ok{color:var(--green);}
+  .waiting{font-size:13px;color:var(--muted);text-align:center;margin:10px 0;}
+  .spin{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--red);animation:pulse 1s infinite;margin-right:6px;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.25;}}
+
+  table.revtbl{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0 16px;}
+  table.revtbl th{text-align:left;color:var(--muted);font-weight:600;font-size:11px;letter-spacing:.5px;padding:6px 8px;border-bottom:1px solid var(--line);}
+  table.revtbl td{padding:8px;border-bottom:1px solid var(--line);}
+  table.revtbl tr:last-child td{border-bottom:none;}
+
+  .scoreboard{display:flex;align-items:center;justify-content:center;gap:16px;font-family:'Oswald',sans-serif;margin-bottom:10px;}
+  .scoreboard .sname{font-size:14px;font-weight:600;width:150px;}
+  .scoreboard .sname.h{text-align:right;color:var(--home-color);}
+  .scoreboard .sname.a{text-align:left;color:var(--away-color);}
+  .scoreboard .sname.outline-text{text-shadow:-1px -1px 0 #fff,1px -1px 0 #fff,-1px 1px 0 #fff,1px 1px 0 #fff,0 -1.4px 0 #fff,0 1.4px 0 #fff,-1.4px 0 0 #fff,1.4px 0 0 #fff;}
+  .scoreboard .sname.outline-text-dark{text-shadow:-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,1px 1px 0 #000,0 -1.4px 0 #000,0 1.4px 0 #000,-1.4px 0 0 #000,1.4px 0 0 #000;}
+  .scoreboard .score{font-size:30px;font-weight:700;background:var(--card2);border:1px solid var(--line);border-radius:8px;padding:2px 14px;letter-spacing:1px;}
+
+  .pitch-wrap{position:relative;border-radius:12px;overflow:hidden;border:1px solid var(--line);line-height:0;background:#0b3d1f;}
+  #pitchSvg{width:100%;height:auto;display:block;}
+  .clock{position:absolute;top:10px;right:10px;background:rgba(0,0,0,.55);color:#fff;font-family:'Oswald',sans-serif;font-weight:600;font-size:15px;padding:5px 10px;border-radius:6px;letter-spacing:.5px;display:flex;align-items:center;gap:6px;z-index:3;}
+  .clock .rec{width:7px;height:7px;border-radius:50%;background:var(--red);animation:pulse 1s infinite;}
+  .kickoff-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(6,14,20,.72);font-family:'Oswald',sans-serif;font-size:36px;font-weight:700;color:#fff;z-index:4;text-align:center;padding:20px;}
+
+  .sit-overlay{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);text-align:center;pointer-events:none;z-index:2;padding:0 14px;}
+  .sit-overlay .title{font-family:'Oswald',sans-serif;font-weight:700;font-size:25px;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.65);margin-bottom:16px;}
+  .sit-overlay.big .title{font-size:34px;}
+  .sit-overlay.goal-anim{animation:goalPop .5s cubic-bezier(.34,1.56,.64,1);}
+  @keyframes goalPop{0%{transform:translateY(-50%) scale(.5);opacity:0;}60%{transform:translateY(-50%) scale(1.18);opacity:1;}100%{transform:translateY(-50%) scale(1);}}
+  .sit-overlay.miss-anim{animation:missShake .4s ease-in-out;}
+  @keyframes missShake{0%,100%{transform:translateY(-50%) translateX(0);}25%{transform:translateY(-50%) translateX(-8px);}75%{transform:translateY(-50%) translateX(8px);}}
+  .sit-overlay.pulse .title,.sit-overlay.pulse .team{animation:situPulse .85s ease-in-out infinite;}
+  @keyframes situPulse{0%,100%{opacity:1;}50%{opacity:.45;}}
+  .goal-flash-rect{animation:goalFlashPulse .45s ease-in-out 2;}
+  @keyframes goalFlashPulse{0%,100%{opacity:.2;}50%{opacity:.6;}}
+  .sit-overlay .team{display:flex;align-items:center;justify-content:center;gap:8px;font-family:'Oswald',sans-serif;font-weight:600;font-size:14px;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.6);margin-top:4px;}
+  .sit-overlay .shield{width:17px;height:17px;border-radius:4px;background:var(--home-color);flex-shrink:0;}
+  .sit-overlay.away .shield{background:var(--away-color);}
+
+  .log{margin-top:12px;max-height:150px;overflow-y:auto;font-size:12.5px;color:var(--muted);display:flex;flex-direction:column;gap:5px;}
+  .log .entry{background:var(--card2);border-radius:6px;padding:6px 9px;color:var(--text);}
+  .log .entry b{color:var(--home-color);}
+  .log .entry.a b{color:var(--away-color);}
+
+  .outcome{font-family:'Oswald',sans-serif;font-size:19px;font-weight:700;padding:12px;border-radius:10px;margin-bottom:14px;text-align:center;}
+  .outcome.win{background:rgba(15,174,92,.15);color:var(--green);border:1px solid rgba(15,174,92,.4);}
+  .outcome.lose{background:rgba(226,0,26,.15);color:#ff5a6a;border:1px solid rgba(226,0,26,.4);}
+
+  table.lbtbl{width:100%;border-collapse:collapse;font-size:14px;margin:8px 0 18px;}
+  table.lbtbl th{text-align:left;color:var(--muted);font-weight:600;font-size:11px;letter-spacing:.5px;padding:6px 8px;border-bottom:1px solid var(--line);}
+  table.lbtbl td{padding:9px 8px;border-bottom:1px solid var(--line);}
+  table.lbtbl tr:first-child td{font-weight:700;color:var(--green);}
+  .lbrank{color:var(--muted);width:26px;}
+  h2.sec{font-family:'Oswald',sans-serif;font-size:15px;margin:18px 0 6px;color:var(--muted);letter-spacing:.5px;}
+</style>
+</head>
+<body>
+<div id="app">
+  <h1>⚽ Tipico Live <span class="badge">MULTIPLAYER</span></h1>
+  <div class="sub">Alle im selben Raum sehen dasselbe Spiel, dieselben Aktionen, dasselbe Ergebnis.</div>
+
+  <!-- NAME -->
+  <div class="screen active card" id="s-name">
+    <label for="nameInput">Dein Name</label>
+    <input id="nameInput" type="text" maxlength="20" placeholder="z.B. Anton">
+    <button class="primary" id="nameNextBtn">Weiter</button>
+  </div>
+
+  <!-- ROOM -->
+  <div class="screen card" id="s-room">
+    <label for="createBtn">Neuen Raum erstellen</label>
+    <button class="primary" id="createBtn">Raum erstellen</button>
+    <div style="text-align:center;color:var(--muted);font-size:12px;margin:14px 0;">— oder —</div>
+    <label for="codeInput">Raum-Code eingeben</label>
+    <input id="codeInput" type="text" maxlength="6" placeholder="z.B. AB3K9" style="text-transform:uppercase;">
+    <div class="err" id="roomErr"></div>
+    <button class="secondary" id="joinBtn">Beitreten</button>
+  </div>
+
+  <!-- LOBBY (Wette platzieren) -->
+  <div class="screen card" id="s-lobby">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+      <span style="font-family:'Oswald',sans-serif;font-size:13px;color:var(--muted);">Raum: <b id="lobbyCode" style="color:#fff;"></b></span>
+    </div>
+    <div class="matchup">
+      <div class="team home"><div class="dot" id="lHomeInit">–</div><div class="name" id="lHomeName">–</div></div>
+      <div class="vs">VS</div>
+      <div class="team away"><div class="dot" id="lAwayInit">–</div><div class="name" id="lAwayName">–</div></div>
+    </div>
+    <div class="odds-row">
+      <div class="odd-btn" data-pick="1"><div class="lbl">HEIM (1)</div><div class="val" id="lOdd1">–</div></div>
+      <div class="odd-btn" data-pick="X"><div class="lbl">UNENTSCHIEDEN</div><div class="val" id="lOddX">–</div></div>
+      <div class="odd-btn" data-pick="2"><div class="lbl">AUSWÄRTS (2)</div><div class="val" id="lOdd2">–</div></div>
+    </div>
+    <div class="market-lbl">Gesamttore 2,5</div>
+    <div class="odds-row odds-row2">
+      <div class="odd-btn" data-pick="O25"><div class="lbl">ÜBER 2,5</div><div class="val" id="lOddO25">–</div></div>
+      <div class="odd-btn" data-pick="U25"><div class="lbl">UNTER 2,5</div><div class="val" id="lOddU25">–</div></div>
+    </div>
+    <div class="market-lbl">Gesamttore 3,5</div>
+    <div class="odds-row odds-row2">
+      <div class="odd-btn" data-pick="O35"><div class="lbl">ÜBER 3,5</div><div class="val" id="lOddO35">–</div></div>
+      <div class="odd-btn" data-pick="U35"><div class="lbl">UNTER 3,5</div><div class="val" id="lOddU35">–</div></div>
+    </div>
+    <label for="stakeInput">Einsatz (Schlücke)</label>
+    <input id="stakeInput" type="number" min="1" max="20" value="3">
+    <button class="primary" id="confirmBetBtn" disabled>Wette bestätigen</button>
+    <div class="waiting" id="lobbyWait" style="display:none;"><span class="spin"></span>Warte auf die anderen…</div>
+    <h2 class="sec">Mitspieler</h2>
+    <div class="plist" id="lobbyPlist"></div>
+  </div>
+
+  <!-- REVEAL -->
+  <div class="screen card" id="s-reveal">
+    <h2 class="sec" style="margin-top:0;">Alle Wetten</h2>
+    <table class="revtbl"><thead><tr><th>Spieler</th><th>Tipp</th><th>Einsatz</th><th>Gewinn bei Sieg</th></tr></thead>
+      <tbody id="revealBody"></tbody>
+    </table>
+    <button class="primary" id="revealNextBtn">Weiter</button>
+    <div class="waiting" id="revealWait" style="display:none;"><span class="spin"></span>Warte auf die anderen…</div>
+  </div>
+
+  <!-- MATCH -->
+  <div class="screen card" id="s-match">
+    <div class="scoreboard">
+      <div class="sname h" id="mHomeName">–</div>
+      <div class="score" id="mScore">0:0</div>
+      <div class="sname a" id="mAwayName">–</div>
+    </div>
+    <div class="pitch-wrap">
+      <svg id="pitchSvg" viewBox="0 0 700 440" preserveAspectRatio="xMidYMid meet"><g id="pitchBase"></g><g id="shapeLayer"></g></svg>
+      <div class="sit-overlay" id="sitOverlay"></div>
+      <div class="clock"><span class="rec"></span><span id="clockText">0:00</span></div>
+      <div class="kickoff-overlay" id="kickoffOverlay">Warte auf Anpfiff…</div>
+    </div>
+    <div class="log" id="matchLog"></div>
+  </div>
+
+  <!-- RESULT -->
+  <div class="screen card" id="s-result">
+    <div style="text-align:center;font-family:'Oswald',sans-serif;font-size:34px;font-weight:700;margin:6px 0 4px;" id="finalScore">0:0</div>
+    <div style="text-align:center;color:var(--muted);font-size:13px;margin-bottom:16px;" id="finalTeams">– vs –</div>
+    <div class="outcome" id="outcomeBox">–</div>
+    <button class="primary" id="resultNextBtn">Bestätigen</button>
+    <div class="waiting" id="resultWait" style="display:none;"><span class="spin"></span>Warte auf die anderen…</div>
+  </div>
+
+  <!-- LEADERBOARD -->
+  <div class="screen card" id="s-leader">
+    <h2 class="sec" style="margin-top:0;">Diese Runde</h2>
+    <table class="revtbl"><thead><tr><th>Spieler</th><th>Tipp</th><th>Ergebnis</th></tr></thead>
+      <tbody id="roundBody"></tbody>
+    </table>
+    <h2 class="sec">Rangliste — meiste verteilte Schlücke</h2>
+    <table class="lbtbl"><thead><tr><th></th><th>Spieler</th><th>Schlücke verteilt</th></tr></thead>
+      <tbody id="leaderBody"></tbody>
+    </table>
+    <button class="primary" id="newRoundBtn">Neue Runde</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* =====================================================================
+     FIREBASE — hier deine eigene Konfiguration aus der Firebase-Konsole
+     einfügen (Projekteinstellungen -> Meine Apps -> Web-App -> Config).
+     ===================================================================== */
+  const firebaseConfig = {
+    apiKey: "AIzaSyAGb0-SH1Xm2iLWiQQF-8Ps10tesEXpfBU",
+    authDomain: "drinkico-159ea.firebaseapp.com",
+    databaseURL: "https://drinkico-159ea-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "drinkico-159ea",
+    storageBucket: "drinkico-159ea.firebasestorage.app",
+    messagingSenderId: "905442713656",
+    appId: "1:905442713656:web:13a084c7706ee177ff06cd"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  /* ---------------- Spieler-Identität (lokal, pro Gerät) ---------------- */
+  let uid = localStorage.getItem("tipico_uid");
+  if(!uid){ uid="p"+Math.random().toString(36).slice(2,10); localStorage.setItem("tipico_uid",uid); }
+  let myName = localStorage.getItem("tipico_name") || "";
+
+  /* ---------------- Deterministischer Zufallsgenerator (geteilter Seed) ---------------- */
+  function mulberry32(seed){
+    return function(){
+      seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+      let t = Math.imul(seed ^ seed>>>15, 1 | seed);
+      t = t + Math.imul(t ^ t>>>7, 61 | t) ^ t;
+      return ((t ^ t>>>14) >>> 0) / 4294967296;
+    };
+  }
+  let rng = Math.random; // wird beim Matchstart durch mulberry32(seed) ersetzt
+
+  /* ---------------- Team-Pool (wie Einzelspieler-Version) ---------------- */
+  const TEAM_POOL = [
+    {name:"FC Bayern München",       lambda:2.55, colors:["#dc052d","#0066b2"]},
+    {name:"Bayer 04 Leverkusen",     lambda:2.00, colors:["#e2001a","#000000"]},
+    {name:"Borussia Dortmund",       lambda:1.95, colors:["#fde100","#000000"]},
+    {name:"VfB Stuttgart",           lambda:1.90, colors:["#e2231a","#ffffff"]},
+    {name:"Borussia Mönchengladbach",lambda:1.40, colors:["#000000","#ffffff"]},
+    {name:"Hamburger SV",            lambda:1.35, colors:["#0055a4","#ffffff"]},
+    {name:"FC Augsburg",             lambda:1.30, colors:["#ba3733","#046a38"]},
+    {name:"TSG 1899 Hoffenheim",     lambda:1.25, colors:["#1c63b7","#ffffff"]},
+    {name:"SV Elversberg 07",        lambda:0.80, colors:["#004b93","#ffffff"]},
+    {name:"SC Paderborn",            lambda:0.75, colors:["#1b3f8b","#000000"]},
+  ];
+
+  const REGULAR_MINUTES=90, REGULAR_MIN_SECONDS=0.5, STOPPAGE_MIN_SECONDS=1.5;
+  const REGULAR_SECONDS=REGULAR_MINUTES*REGULAR_MIN_SECONDS;
+  let stoppageMinutes=3, MATCH_SECONDS=REGULAR_SECONDS+stoppageMinutes*STOPPAGE_MIN_SECONDS;
+  const SITUATION_INTERVAL=1500;
+
+  /* ---------------- Poisson / Quoten ---------------- */
+  function poissonDist(lambda,maxK){const arr=[Math.exp(-lambda)];for(let k=1;k<=maxK;k++)arr.push(arr[k-1]*lambda/k);return arr;}
+  function outcomeProbs(lh,la){
+    const H=poissonDist(lh,9), A=poissonDist(la,9);
+    let pHome=0,pDraw=0,pAway=0;
+    for(let i=0;i<=9;i++) for(let j=0;j<=9;j++){const p=H[i]*A[j]; if(i>j)pHome+=p; else if(i===j)pDraw+=p; else pAway+=p;}
+    const sum=pHome+pDraw+pAway;
+    return {pHome:pHome/sum,pDraw:pDraw/sum,pAway:pAway/sum};
+  }
+  function poissonCdf(lambda,k){const arr=poissonDist(lambda,Math.max(k,1));let s=0;for(let i=0;i<=k;i++)s+=arr[i];return s;}
+  function probToOdd(p){const margin=1.07;return Math.max(1.03,Math.round((1/(p*margin))*100)/100);}
+  function initials(name){
+    return name.split(" ").filter(w=>w.length>1||/^[A-ZÄÖÜ]/.test(w)).slice(0,2).map(w=>w[0]).join("").toUpperCase()||name.slice(0,2).toUpperCase();
+  }
+  function drawMatch(){
+    const pool=TEAM_POOL.slice();
+    const i=Math.floor(Math.random()*pool.length);
+    const home=pool.splice(i,1)[0];
+    const j=Math.floor(Math.random()*pool.length);
+    const away=pool.splice(j,1)[0];
+    const lh=home.lambda*1.08, la=away.lambda;
+    const p=outcomeProbs(lh,la);
+    const totalLambda=lh+la;
+    const pUnder25=poissonCdf(totalLambda,2), pUnder35=poissonCdf(totalLambda,3);
+    const odds={
+      h:probToOdd(p.pHome), x:probToOdd(p.pDraw), a:probToOdd(p.pAway),
+      o25:probToOdd(1-pUnder25), u25:probToOdd(pUnder25),
+      o35:probToOdd(1-pUnder35), u35:probToOdd(pUnder35)
+    };
+    return {home,away,odds,seed:Math.floor(Math.random()*2147483647)};
+  }
+  function teamColors(home,away){
+    const homeColor=home.colors[0];
+    const awayColor=(away.colors[0]===homeColor)?away.colors[1]:away.colors[0];
+    return {homeColor,awayColor};
+  }
+
+  /* ---------------- DOM ---------------- */
+  const $=id=>document.getElementById(id);
+  function showScreen(id){
+    document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+    $(id).classList.add("active");
+  }
+
+  /* ---------------- Screen 1: Name ---------------- */
+  $("nameInput").value=myName;
+  $("nameNextBtn").addEventListener("click",()=>{
+    const v=$("nameInput").value.trim();
+    if(!v){ $("nameInput").focus(); return; }
+    myName=v; localStorage.setItem("tipico_name",myName);
+    showScreen("s-room");
+  });
+
+  /* ---------------- Screen 2: Raum erstellen / beitreten ---------------- */
+  let roomCode=null, roomRef=null, lastPhase=null, matchStarted=false;
+
+  function genCode(){
+    const chars="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    let c=""; for(let i=0;i<5;i++) c+=chars[Math.floor(Math.random()*chars.length)];
+    return c;
+  }
+
+  $("createBtn").addEventListener("click",()=>{
+    const code=genCode();
+    const m=drawMatch();
+    db.ref("rooms/"+code).set({
+      home:m.home, away:m.away, odds:m.odds, seed:m.seed,
+      phase:"lobby", createdAt:Date.now(), leaderboardApplied:false,
+      players:{ [uid]:{name:myName, confirmedBet:false} }
+    }).then(()=>enterRoom(code));
+  });
+
+  $("joinBtn").addEventListener("click",()=>{
+    const code=$("codeInput").value.trim().toUpperCase();
+    $("roomErr").textContent="";
+    if(!code) return;
+    db.ref("rooms/"+code).get().then(snap=>{
+      if(!snap.exists()){ $("roomErr").textContent="Raum nicht gefunden."; return; }
+      const room=snap.val();
+      if(room.phase!=="lobby"){ $("roomErr").textContent="Runde läuft schon — bitte warten oder neuen Raum erstellen."; return; }
+      db.ref(`rooms/${code}/players/${uid}`).set({name:myName, confirmedBet:false}).then(()=>enterRoom(code));
+    });
+  });
+
+  function enterRoom(code){
+    roomCode=code;
+    localStorage.setItem("tipico_lastroom",code);
+    lastPhase=null; matchStarted=false;
+    if(roomRef) roomRef.off();
+    roomRef=db.ref("rooms/"+code);
+    roomRef.on("value",snap=>{
+      const room=snap.val();
+      if(!room) return;
+      onRoomUpdate(room);
+    });
+  }
+
+  const lastRoom=localStorage.getItem("tipico_lastroom");
+  if(lastRoom) $("codeInput").value=lastRoom;
+
+  /* ---------------- Zentrale Reaktion auf Raum-Änderungen ---------------- */
+  function onRoomUpdate(room){
+    if(room.phase==="lobby"){ renderLobby(room); }
+    else if(room.phase==="reveal"){ renderReveal(room); }
+    else if(room.phase==="countdown"){
+      if(!matchStarted){ matchStarted=true; startMatchSync(room); }
+    }
+    else if(room.phase==="leaderboard"){ renderLeaderboard(room); }
+    lastPhase=room.phase;
+  }
+
+  /* ---------------- Lobby: Wette + Bestätigung ---------------- */
+  let selectedPick=null, stake=3, curOdds=null;
+
+  document.querySelectorAll("#s-lobby .odd-btn").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      document.querySelectorAll("#s-lobby .odd-btn").forEach(b=>b.classList.remove("selected"));
+      btn.classList.add("selected");
+      selectedPick=btn.dataset.pick;
+      $("confirmBetBtn").disabled=false;
+    });
+  });
+  $("stakeInput").addEventListener("input",()=>{ stake=Math.max(1,parseInt($("stakeInput").value||"1",10)); });
+
+  $("confirmBetBtn").addEventListener("click",()=>{
+    if(!selectedPick) return;
+    db.ref(`rooms/${roomCode}/players/${uid}`).update({
+      name:myName, pick:selectedPick, stake:stake, confirmedBet:true
+    });
+    $("confirmBetBtn").disabled=true;
+    document.querySelectorAll("#s-lobby .odd-btn").forEach(b=>b.style.pointerEvents="none");
+    $("stakeInput").disabled=true;
+    $("lobbyWait").style.display="block";
+  });
+
+  function pickOdd(odds,pick){
+    return {"1":odds.h,"X":odds.x,"2":odds.a,"O25":odds.o25,"U25":odds.u25,"O35":odds.o35,"U35":odds.u35}[pick];
+  }
+  function pickLabel(pick){
+    return {"1":"Heim","X":"Unentschieden","2":"Auswärts","O25":"Über 2,5","U25":"Unter 2,5","O35":"Über 3,5","U35":"Unter 3,5"}[pick]||"–";
+  }
+
+  function renderLobby(room){
+    showScreen("s-lobby");
+    $("lobbyCode").textContent=roomCode;
+    $("lHomeName").textContent=room.home.name; $("lAwayName").textContent=room.away.name;
+    $("lHomeInit").textContent=initials(room.home.name); $("lAwayInit").textContent=initials(room.away.name);
+    const c=teamColors(room.home,room.away);
+    document.documentElement.style.setProperty("--home-color",c.homeColor);
+    document.documentElement.style.setProperty("--away-color",c.awayColor);
+    curOdds=room.odds;
+    $("lOdd1").textContent=room.odds.h.toFixed(2); $("lOddX").textContent=room.odds.x.toFixed(2); $("lOdd2").textContent=room.odds.a.toFixed(2);
+    $("lOddO25").textContent=room.odds.o25.toFixed(2); $("lOddU25").textContent=room.odds.u25.toFixed(2);
+    $("lOddO35").textContent=room.odds.o35.toFixed(2); $("lOddU35").textContent=room.odds.u35.toFixed(2);
+
+    const players=room.players||{};
+    const list=$("lobbyPlist"); list.innerHTML="";
+    let allConfirmed=true, count=0;
+    Object.keys(players).forEach(pid=>{
+      count++;
+      const p=players[pid];
+      if(!p.confirmedBet) allConfirmed=false;
+      const row=document.createElement("div"); row.className="prow";
+      row.innerHTML=`<span class="pname">${p.name}${pid===uid?" (du)":""}</span><span class="pstatus${p.confirmedBet?" ok":""}">${p.confirmedBet?"✓ bereit":"tippt…"}</span>`;
+      list.appendChild(row);
+    });
+
+    if(allConfirmed && count>0){
+      db.ref(`rooms/${roomCode}/phase`).set("reveal");
+    }
+  }
+
+  /* ---------------- Reveal: Übersicht aller Wetten ---------------- */
+  $("revealNextBtn").addEventListener("click",()=>{
+    db.ref(`rooms/${roomCode}/players/${uid}/confirmedReveal`).set(true);
+    $("revealNextBtn").style.display="none";
+    $("revealWait").style.display="block";
+  });
+
+  function renderReveal(room){
+    showScreen("s-reveal");
+    const players=room.players||{};
+    const body=$("revealBody"); body.innerHTML="";
+    let allConfirmed=true;
+    Object.keys(players).forEach(pid=>{
+      const p=players[pid];
+      const odd=pickOdd(room.odds,p.pick);
+      const gain=Math.round((p.stake||0)*(odd||0));
+      if(!p.confirmedReveal) allConfirmed=false;
+      const tr=document.createElement("tr");
+      tr.innerHTML=`<td>${p.name}${pid===uid?" (du)":""}</td><td>${pickLabel(p.pick)}</td><td>${p.stake}</td><td>${gain}</td>`;
+      body.appendChild(tr);
+    });
+    if(allConfirmed){
+      // Nur einmal auslösen: matchStartAt setzen, falls noch nicht vorhanden
+      if(!room.matchStartAt){
+        db.ref(`rooms/${roomCode}`).update({phase:"countdown", matchStartAt:Date.now()+4000});
+      }
+    }
+  }
+
+  /* ---------------- Situationskarten-Engine (deterministisch, Seed-gesteuert) ---------------- */
+  const W=700,H=440;
+  const SITUATION_LABELS={
+    kickoff:"Anstoß", attack:"Angriff", danger:"Gefährlicher Angriff", counter:"Konter",
+    redcard:"Rote Karte", penalty:"Elfmeter", freekick:"Gefährlicher Freistoß",
+    goal:"TOOOR!", penaltyMiss:"KEIN TOR!", halftime:"Halbzeit", fulltime:"Abpfiff"
+  };
+  const GOAL_CHANCE={danger:0.30, counter:0.36, freekick:0.27, penalty:0.70};
+  function otherTeam(t){return t==="home"?"away":"home";}
+
+  let mHome,mAway,mHomeColor,mAwayColor,scoreH,scoreA;
+  let pendingQueue,lastSituation,halftimeShown,startTime,situationTimer,clockTimer;
+  let cardPenalty;
+
+  function teamName(t){return t==="home"?mHome.name:mAway.name;}
+  function dirFor(t){return t==="home"?1:-1;}
+  function elapsedSec(){return Math.max(0,(Date.now()-startTime)/1000);}
+  function pickWeightedTeam(){
+    const wh=mHome.lambda*cardPenalty.home, wa=mAway.lambda*cardPenalty.away;
+    return rng()<(wh/(wh+wa)) ? "home":"away";
+  }
+  function nextSituation(){
+    if(pendingQueue.length) return pendingQueue.shift();
+    const last=lastSituation;
+    if(last && (last.type==="danger"||last.type==="counter")){
+      const r=rng();
+      if(r<0.08) return {type:"penalty", team:last.team};
+      if(r<0.14) return {type:"redcard", team:otherTeam(last.team)};
+      if(r<0.26) return {type:"freekick", team:last.team};
+      if(r<0.36) return {type:"counter", team:otherTeam(last.team)};
+    }
+    const team=pickWeightedTeam();
+    return {type: rng()<0.68 ? "attack":"danger", team};
+  }
+  function wedgeFromApex(ax,ay,dx,dy,spreadDeg,length){
+    const baseAngle=Math.atan2(dy,dx), half=spreadDeg*Math.PI/360;
+    const a1=baseAngle-half, a2=baseAngle+half;
+    return `${ax},${ay} ${ax+Math.cos(a1)*length},${ay+Math.sin(a1)*length} ${ax+Math.cos(a2)*length},${ay+Math.sin(a2)*length}`;
+  }
+  function drawPitchBase(){
+    $("pitchBase").innerHTML=`
+      <rect x="0" y="0" width="${W}" height="${H}" fill="#0c4322"></rect>
+      ${Array.from({length:10}).map((_,i)=>i%2===1?`<rect x="${i*W/10}" y="0" width="${W/10}" height="${H}" fill="#0e4a26"></rect>`:"").join("")}
+      <rect x="10" y="10" width="${W-20}" height="${H-20}" fill="none" stroke="rgba(255,255,255,.85)" stroke-width="2.5"></rect>
+      <line x1="${W/2}" y1="10" x2="${W/2}" y2="${H-10}" stroke="rgba(255,255,255,.85)" stroke-width="2.5"></line>
+      <circle cx="${W/2}" cy="${H/2}" r="55" fill="none" stroke="rgba(255,255,255,.85)" stroke-width="2.5"></circle>
+      <circle cx="${W/2}" cy="${H/2}" r="2.5" fill="#fff"></circle>
+      <rect x="10" y="${H/2-95}" width="95" height="190" fill="none" stroke="rgba(255,255,255,.85)" stroke-width="2.5"></rect>
+      <rect x="${W-105}" y="${H/2-95}" width="95" height="190" fill="none" stroke="rgba(255,255,255,.85)" stroke-width="2.5"></rect>
+      <rect x="2" y="${H/2-38}" width="10" height="76" fill="none" stroke="rgba(255,255,255,.6)" stroke-width="2"></rect>
+      <rect x="${W-12}" y="${H/2-38}" width="10" height="76" fill="none" stroke="rgba(255,255,255,.6)" stroke-width="2"></rect>`;
+  }
+  function renderSituation(sit){
+    const dir=dirFor(sit.team);
+    const teamColor=sit.team==="home"?mHomeColor:mAwayColor;
+    let shapes=`<rect x="8" y="8" width="${W-16}" height="${H-16}" fill="rgba(0,0,0,.13)"></rect>`;
+    switch(sit.type){
+      case "attack": case "danger": {
+        const boundaryX=sit.team==="home"?W*0.60:W*0.40;
+        const outerX=sit.team==="home"?W-8:8;
+        const teeth=7, step=(H-16)/teeth, zdir=outerX>boundaryX?1:-1;
+        const bp=[]; for(let i=0;i<=teeth;i++){const y=8+i*step; bp.push(`${(i%2===0)?boundaryX:boundaryX+zdir*24},${y}`);}
+        const pts=[`${outerX},8`,`${outerX},${H-8}`,...bp.slice().reverse()].join(" ");
+        shapes+=`<polygon points="${pts}" fill="${sit.type==="danger"?"rgba(226,0,26,.30)":teamColor+"30"}"></polygon>`;
+        break;
+      }
+      case "counter": {
+        const x1=sit.team==="home"?60:W-60, x2=sit.team==="home"?W-30:30;
+        const yTop=H/2-70, yBot=H/2+70;
+        const pts=sit.team==="home"
+          ? `${x1},${yBot} ${x1+40},${yTop} ${x2},${H/2-30} ${x2-40},${H/2+30}`
+          : `${x1},${yBot} ${x1-40},${yTop} ${x2},${H/2-30} ${x2+40},${H/2+30}`;
+        shapes+=`<polygon points="${pts}" fill="rgba(226,0,26,.32)"></polygon>`;
+        break;
+      }
+      case "freekick": {
+        const x0=sit.team==="home"?380+rng()*140:W-380-rng()*140, y0=70+rng()*(H-140);
+        shapes+=`<circle cx="${x0}" cy="${y0}" r="30" fill="rgba(226,0,26,.20)" stroke="${teamColor}" stroke-width="2.5"></circle><circle cx="${x0}" cy="${y0}" r="5" fill="${teamColor}"></circle>`;
+        break;
+      }
+      case "penalty": {
+        const x0=sit.team==="home"?W-90:90, y0=H/2;
+        shapes+=`<rect x="${sit.team==="home"?W-105:10}" y="${H/2-95}" width="95" height="190" fill="rgba(226,0,26,.20)"></rect><circle cx="${x0}" cy="${y0}" r="6" fill="#fff"></circle><circle cx="${x0}" cy="${y0}" r="6" fill="none" stroke="${teamColor}" stroke-width="2"></circle>`;
+        break;
+      }
+      case "redcard": shapes+=`<rect x="${W/2-24}" y="${H/2-34}" width="48" height="68" rx="6" fill="#e2001a" stroke="#fff" stroke-width="2.5"></rect>`; break;
+      case "goal": shapes+=`<rect class="goal-flash-rect" x="8" y="8" width="${W-16}" height="${H-16}" fill="rgba(226,0,26,.36)"></rect>`; break;
+      case "penaltyMiss": {
+        const x0=sit.team==="home"?W-90:90, y0=H/2;
+        shapes+=`<rect x="8" y="8" width="${W-16}" height="${H-16}" fill="rgba(0,0,0,.45)"></rect><circle cx="${x0}" cy="${y0}" r="6" fill="#888"></circle>`;
+        break;
+      }
+      case "kickoff": case "halftime": case "fulltime":
+        shapes+=`<rect x="8" y="8" width="${W-16}" height="${H-16}" fill="rgba(0,0,0,.35)"></rect>`; break;
+    }
+    $("shapeLayer").innerHTML=shapes;
+    const ov=$("sitOverlay");
+    ov.className="sit-overlay"+(sit.team==="away"?" away":"")+(sit.type==="goal"?" big goal-anim":"")+(sit.type==="penaltyMiss"?" big miss-anim":"")+(sit.type==="penalty"?" pulse":"");
+    let html=`<div class="title">${SITUATION_LABELS[sit.type]}</div>`;
+    if(sit.team && sit.type!=="kickoff" && sit.type!=="halftime" && sit.type!=="fulltime"){
+      html+=`<div class="team"><span class="shield"></span>${teamName(sit.team).toUpperCase()}</div>`;
+    }
+    ov.innerHTML=html;
+  }
+  function clockMinute(){
+    const el=elapsedSec();
+    if(el<=REGULAR_SECONDS) return Math.min(REGULAR_MINUTES, Math.floor(el/REGULAR_MIN_SECONDS)+1);
+    const extra=Math.min(stoppageMinutes, Math.floor((el-REGULAR_SECONDS)/STOPPAGE_MIN_SECONDS)+1);
+    return REGULAR_MINUTES+extra;
+  }
+  function formatMinute(m){return m<=REGULAR_MINUTES ? m+"'" : REGULAR_MINUTES+"+"+(m-REGULAR_MINUTES)+"'";}
+  function logSituation(sit){
+    const el=document.createElement("div"); el.className="entry"+(sit.team==="away"?" a":"");
+    const minute=formatMinute(clockMinute());
+    let text;
+    if(sit.type==="goal") text=`Tor für ${teamName(sit.team)}!`;
+    else if(sit.type==="kickoff") text="Anstoß";
+    else if(sit.type==="halftime") text="Halbzeit";
+    else if(sit.type==="fulltime") text="Schlusspfiff";
+    else if(sit.type==="redcard") text=`Rote Karte gegen ${teamName(sit.team)}!`;
+    else text=`${SITUATION_LABELS[sit.type]} – ${teamName(sit.team)}`;
+    el.innerHTML=`<b>${minute}</b> — ${text}`;
+    $("matchLog").prepend(el);
+  }
+  function logExtra(team,text){
+    const el=document.createElement("div"); el.className="entry"+(team==="away"?" a":"");
+    el.innerHTML=`<b>${formatMinute(clockMinute())}</b> — ${text}`;
+    $("matchLog").prepend(el);
+  }
+  const GOAL_DWELL=1900, PENALTY_PAUSE=2000, PENALTY_RESULT_DWELL=1500;
+  function scheduleTick(delay){ clearTimeout(situationTimer); situationTimer=setTimeout(runTick,delay); }
+  function resolvePenalty(sit){
+    const scored=rng()<GOAL_CHANCE.penalty;
+    if(scored){
+      lastSituation=null;
+      const g={type:"goal",team:sit.team}; renderSituation(g); logSituation(g);
+      if(sit.team==="home") scoreH++; else scoreA++;
+      $("mScore").textContent=`${scoreH}:${scoreA}`;
+      scheduleTick(GOAL_DWELL);
+    } else {
+      lastSituation=null;
+      renderSituation({type:"penaltyMiss",team:sit.team});
+      logExtra(sit.team,"Elfmeter verschossen/gehalten!");
+      scheduleTick(PENALTY_RESULT_DWELL);
+    }
+  }
+  function runTick(){
+    const sit=nextSituation();
+    if(sit.type==="penalty"){
+      lastSituation=sit; renderSituation(sit); logSituation(sit);
+      clearTimeout(situationTimer);
+      situationTimer=setTimeout(()=>resolvePenalty(sit),PENALTY_PAUSE);
+      return;
+    }
+    if(sit.type!=="goal") lastSituation=sit; else lastSituation=null;
+    renderSituation(sit); logSituation(sit);
+    let nextDelay=SITUATION_INTERVAL;
+    if(sit.type==="goal"){
+      if(sit.team==="home") scoreH++; else scoreA++;
+      $("mScore").textContent=`${scoreH}:${scoreA}`;
+      nextDelay=GOAL_DWELL;
+    } else if(sit.type==="redcard"){
+      cardPenalty[sit.team]*=0.55;
+    } else {
+      const chance=GOAL_CHANCE[sit.type];
+      if(chance!==undefined && rng()<chance) pendingQueue.unshift({type:"goal",team:sit.team});
+    }
+    scheduleTick(nextDelay);
+  }
+  function tickClock(){
+    const el=elapsedSec();
+    $("clockText").textContent=formatMinute(clockMinute());
+    if(!halftimeShown && el>=45*REGULAR_MIN_SECONDS){
+      halftimeShown=true; renderSituation({type:"halftime"}); logSituation({type:"halftime"});
+    }
+    if(el>=MATCH_SECONDS){
+      clearInterval(clockTimer); clearTimeout(situationTimer);
+      renderSituation({type:"fulltime"}); logSituation({type:"fulltime"});
+      setTimeout(onMatchEnd,1100);
+    }
+  }
+
+  /* ---------------- Match-Start: synchronisiert über matchStartAt + Seed ---------------- */
+  let myPick=null, myStake=0, myOdd=1, curRoomOdds=null;
+
+  function startMatchSync(room){
+    mHome=room.home; mAway=room.away; curRoomOdds=room.odds;
+    const c=teamColors(mHome,mAway); mHomeColor=c.homeColor; mAwayColor=c.awayColor;
+    document.documentElement.style.setProperty("--home-color",mHomeColor);
+    document.documentElement.style.setProperty("--away-color",mAwayColor);
+
+    const me=(room.players||{})[uid]||{};
+    myPick=me.pick; myStake=me.stake||0; myOdd=pickOdd(room.odds,myPick);
+
+    $("mHomeName").textContent=mHome.name; $("mAwayName").textContent=mAway.name;
+    $("mHomeName").classList.remove("outline-text","outline-text-dark");
+    $("mAwayName").classList.remove("outline-text","outline-text-dark");
+    const isLight=cc=>cc.toLowerCase()==="#ffffff"||cc.toLowerCase()==="#fde100";
+    $("mHomeName").classList.add(isLight(mHomeColor)?"outline-text-dark":"outline-text");
+    $("mAwayName").classList.add(isLight(mAwayColor)?"outline-text-dark":"outline-text");
+    $("mScore").textContent="0:0"; $("matchLog").innerHTML="";
+
+    rng=mulberry32(room.seed);
+    stoppageMinutes=rng()<0.5?3:4;
+    MATCH_SECONDS=REGULAR_SECONDS+stoppageMinutes*STOPPAGE_MIN_SECONDS;
+    scoreH=0; scoreA=0; pendingQueue=[]; lastSituation=null; halftimeShown=false;
+    cardPenalty={home:1,away:1};
+
+    showScreen("s-match");
+    drawPitchBase();
+
+    const delay=room.matchStartAt-Date.now();
+    function kickoff(){
+      $("kickoffOverlay").style.display="none";
+      startTime=Date.now();
+      renderSituation({type:"kickoff"}); logSituation({type:"kickoff"});
+      clockTimer=setInterval(tickClock,250);
+      situationTimer=setTimeout(runTick,SITUATION_INTERVAL);
+    }
+    if(delay>200){
+      $("kickoffOverlay").style.display="flex";
+      const iv=setInterval(()=>{
+        const rem=Math.ceil((room.matchStartAt-Date.now())/1000);
+        if(rem>0){ $("kickoffOverlay").textContent="Anpfiff in "+rem; }
+        else { clearInterval(iv); kickoff(); }
+      },200);
+    } else {
+      kickoff();
+    }
+  }
+
+  /* ---------------- Match-Ende: eigenes Ergebnis melden ---------------- */
+  function onMatchEnd(){
+    const total=scoreH+scoreA;
+    const won =
+      (myPick==="1"&&scoreH>scoreA) || (myPick==="X"&&scoreH===scoreA) || (myPick==="2"&&scoreA>scoreH) ||
+      (myPick==="O25"&&total>2) || (myPick==="U25"&&total<3) ||
+      (myPick==="O35"&&total>3) || (myPick==="U35"&&total<4);
+    const amount=won?Math.round(myStake*myOdd):0;
+
+    $("finalScore").textContent=`${scoreH}:${scoreA}`;
+    $("finalTeams").textContent=`${mHome.name} – ${mAway.name}`;
+    const box=$("outcomeBox");
+    if(won){ box.className="outcome win"; box.textContent=`Gewonnen! Verteile ${amount} Schlücke (Quote ${myOdd.toFixed(2)}).`; }
+    else{ box.className="outcome lose"; box.textContent=`Verloren! Trinke ${myStake} Schlücke selbst.`; }
+
+    db.ref(`rooms/${roomCode}/players/${uid}/result`).set({pick:myPick,stake:myStake,odd:myOdd,won,amount});
+    showScreen("s-result");
+    $("resultNextBtn").style.display="block"; $("resultWait").style.display="none";
+  }
+
+  $("resultNextBtn").addEventListener("click",()=>{
+    db.ref(`rooms/${roomCode}/players/${uid}/confirmedResult`).set(true);
+    $("resultNextBtn").style.display="none";
+    $("resultWait").style.display="block";
+    // Prüfen ob alle bestätigt haben -> Rangliste freischalten
+    db.ref(`rooms/${roomCode}/players`).get().then(snap=>{
+      const players=snap.val()||{};
+      const allDone=Object.values(players).every(p=>p.confirmedResult);
+      if(allDone) applyLeaderboardAndAdvance(players);
+    });
+  });
+
+  function sanitizeKey(name){ return name.replace(/[.#$/\[\]]/g,"_"); }
+
+  function applyLeaderboardAndAdvance(players){
+    // Nur ein Client darf die Rangliste einmalig aktualisieren (Transaktion als Schranke)
+    db.ref(`rooms/${roomCode}/leaderboardApplied`).transaction(cur=>cur?undefined:true).then(res=>{
+      if(res.committed){
+        Object.values(players).forEach(p=>{
+          if(p.result && p.result.won && p.result.amount>0){
+            db.ref(`leaderboard/${sanitizeKey(p.name)}`).transaction(cur=>{
+              const c=cur||{name:p.name,total:0};
+              c.total=(c.total||0)+p.result.amount; c.name=p.name;
+              return c;
+            });
+          }
+        });
+      }
+      db.ref(`rooms/${roomCode}/phase`).set("leaderboard");
+    });
+  }
+
+  function renderLeaderboard(room){
+    showScreen("s-leader");
+    const players=room.players||{};
+    const rb=$("roundBody"); rb.innerHTML="";
+    Object.values(players).sort((a,b)=>(b.result?.amount||0)-(a.result?.amount||0)).forEach(p=>{
+      const r=p.result||{};
+      const tr=document.createElement("tr");
+      tr.innerHTML=`<td>${p.name}</td><td>${pickLabel(r.pick)}</td><td>${r.won?`+${r.amount} verteilt`:"verloren"}</td>`;
+      rb.appendChild(tr);
+    });
+    db.ref("leaderboard").get().then(snap=>{
+      const lb=snap.val()||{};
+      const arr=Object.values(lb).sort((a,b)=>b.total-a.total).slice(0,15);
+      const body=$("leaderBody"); body.innerHTML="";
+      arr.forEach((e,i)=>{
+        const tr=document.createElement("tr");
+        tr.innerHTML=`<td class="lbrank">${i+1}.</td><td>${e.name}</td><td>${e.total}</td>`;
+        body.appendChild(tr);
+      });
+      if(arr.length===0) body.innerHTML=`<tr><td colspan="3" style="color:var(--muted);">Noch keine Einträge.</td></tr>`;
+    });
+  }
+
+  $("newRoundBtn").addEventListener("click",()=>{
+    db.ref(`rooms/${roomCode}/players`).get().then(snap=>{
+      const players=snap.val()||{};
+      const resetPlayers={};
+      Object.keys(players).forEach(pid=>{ resetPlayers[pid]={name:players[pid].name, confirmedBet:false}; });
+      const m=drawMatch();
+      db.ref(`rooms/${roomCode}`).update({
+        home:m.home, away:m.away, odds:m.odds, seed:m.seed,
+        phase:"lobby", matchStartAt:null, leaderboardApplied:false,
+        players:resetPlayers
+      });
+      matchStarted=false;
+      selectedPick=null; $("confirmBetBtn").disabled=true;
+      document.querySelectorAll("#s-lobby .odd-btn").forEach(b=>{b.classList.remove("selected"); b.style.pointerEvents="auto";});
+      $("stakeInput").disabled=false; $("stakeInput").value=3; stake=3;
+      $("lobbyWait").style.display="none";
+      $("revealNextBtn").style.display="block"; $("revealWait").style.display="none";
+    });
+  });
+
+})();
+</script>
+</body>
+</html>
