@@ -29,6 +29,49 @@
   .screen{display:none;}
   .screen.active{display:block;}
 
+  /* --- Tipico-Style Sport-Home --- */
+  .tipico-header{
+    background:linear-gradient(160deg,var(--red) 0%,var(--red-dark) 100%);
+    border-radius:14px;padding:18px 18px 16px;margin-bottom:14px;color:#fff;
+  }
+  .tipico-header .tlogo{font-family:'Oswald',sans-serif;font-weight:700;font-size:24px;letter-spacing:.5px;}
+  .sport-icons{display:flex;gap:10px;margin-top:14px;overflow-x:auto;padding-bottom:2px;}
+  .sport-icon{
+    flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:4px;
+    min-width:58px;cursor:pointer;-webkit-tap-highlight-color:transparent;
+  }
+  .sport-icon .ico{
+    width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,.14);
+    display:flex;align-items:center;justify-content:center;font-size:20px;
+  }
+  .sport-icon.live .ico{background:#fff;color:var(--red);}
+  .sport-icon .lbl2{font-size:11px;color:rgba(255,255,255,.92);font-family:'Inter',sans-serif;}
+  .sport-icon.inert{opacity:.55;}
+  .sport-icon:active .ico{transform:scale(.94);}
+
+  .matchrow{
+    display:flex;align-items:center;gap:10px;background:var(--card2);border:1.5px solid var(--line);
+    border-radius:10px;padding:12px;margin-bottom:8px;cursor:pointer;transition:.12s;
+  }
+  .matchrow:active{transform:scale(.99);}
+  .matchrow .mteams{flex:1;min-width:0;}
+  .matchrow .mteams .t1,.matchrow .mteams .t2{font-family:'Oswald',sans-serif;font-weight:600;font-size:13.5px;line-height:1.5;}
+  .matchrow .modds{display:flex;gap:6px;flex-shrink:0;}
+  .matchrow .modds .mo{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:5px 8px;text-align:center;min-width:44px;}
+  .matchrow .modds .mo .ml{font-size:9px;color:var(--muted);}
+  .matchrow .modds .mo .mv{font-family:'Oswald',sans-serif;font-weight:700;font-size:13px;color:var(--red);}
+
+  .livecard{
+    background:linear-gradient(160deg,#1a1a1a,#2b2b2b);color:#fff;border-radius:14px;padding:18px;margin-bottom:16px;
+  }
+  .livecard .ldot{display:inline-flex;align-items:center;gap:5px;background:var(--red);border-radius:5px;padding:3px 8px;font-size:11px;font-family:'Oswald',sans-serif;font-weight:700;letter-spacing:.5px;}
+  .livecard .ldot .dot{width:6px;height:6px;border-radius:50%;background:#fff;animation:pulse 1s infinite;}
+  .livecard .lminute{float:right;font-family:'Oswald',sans-serif;font-weight:700;font-size:14px;}
+  .livecard .lteams{margin-top:16px;display:flex;align-items:center;justify-content:space-between;gap:10px;}
+  .livecard .lteam{flex:1;text-align:center;font-family:'Oswald',sans-serif;font-weight:600;font-size:13.5px;}
+  .livecard .lscore{font-family:'Oswald',sans-serif;font-weight:700;font-size:30px;padding:0 10px;}
+  .backlink{font-size:12px;color:var(--muted);text-decoration:underline;cursor:pointer;display:inline-block;margin-bottom:12px;}
+
   input[type=text],input[type=number]{
     width:100%;background:var(--card2);border:1.5px solid var(--line);border-radius:8px;
     color:var(--text);padding:10px;font-size:15px;font-family:'Inter',sans-serif;margin-bottom:12px;
@@ -142,6 +185,44 @@
     <div class="hint" style="margin-top:12px;">Multiplayer: alle im selben Raum sehen dasselbe Spiel, dieselben Aktionen, dasselbe Ergebnis.</div>
   </div>
 
+  <!-- SPORT-HOME (Tipico-Style) -->
+  <div class="screen card" id="s-home">
+    <div class="tipico-header">
+      <div class="tlogo">⚽ Drinkico</div>
+      <div class="sport-icons">
+        <div class="sport-icon live" id="iconLive"><div class="ico">🔴</div><div class="lbl2">Live</div></div>
+        <div class="sport-icon" id="iconFootball"><div class="ico">⚽</div><div class="lbl2">Fußball</div></div>
+        <div class="sport-icon inert"><div class="ico">🏀</div><div class="lbl2">Basketball</div></div>
+        <div class="sport-icon inert"><div class="ico">🎾</div><div class="lbl2">Tennis</div></div>
+        <div class="sport-icon inert"><div class="ico">🏒</div><div class="lbl2">Eishockey</div></div>
+      </div>
+    </div>
+    <div class="hint">Fußball ist startklar. Weitere Sportarten sind Platzhalter für später.</div>
+    <a href="#" class="backlink" id="homeSwitchModeLink">Modus wechseln</a>
+  </div>
+
+  <!-- FUSSBALL MATCH-LISTE -->
+  <div class="screen card" id="s-matchlist">
+    <a href="#" class="backlink" id="matchlistBackLink">&larr; Sportarten</a>
+    <h2 class="sec" style="margin-top:0;">Fußball – Heute</h2>
+    <div id="matchListBody"></div>
+  </div>
+
+  <!-- LIVE-WETTE -->
+  <div class="screen card" id="s-liveinfo">
+    <a href="#" class="backlink" id="liveBackLink">&larr; Sportarten</a>
+    <div class="livecard" id="liveCard"></div>
+    <div class="odds-row" id="liveOddsRow">
+      <div class="odd-btn" data-pick="1"><div class="lbl">HEIM (1)</div><div class="val" id="liveOdd1">–</div></div>
+      <div class="odd-btn" data-pick="X"><div class="lbl">UNENTSCHIEDEN</div><div class="val" id="liveOddX">–</div></div>
+      <div class="odd-btn" data-pick="2"><div class="lbl">AUSWÄRTS (2)</div><div class="val" id="liveOdd2">–</div></div>
+    </div>
+    <label for="liveStakeInput">Einsatz (Schlücke)</label>
+    <input id="liveStakeInput" type="number" min="1" max="20" value="3">
+    <div class="payout-hint" id="livePayoutHint">Wähle einen Tipp aus, um den Gewinn zu sehen.</div>
+    <button class="primary" id="liveBetBtn" disabled>Live-Wette platzieren</button>
+  </div>
+
   <!-- NAME -->
   <div class="screen card" id="s-name">
     <label for="nameInput">Dein Name</label>
@@ -191,7 +272,6 @@
     <label for="stakeInput">Einsatz (Schlücke)</label>
     <input id="stakeInput" type="number" min="1" max="20" value="3">
     <button class="primary" id="confirmBetBtn" disabled>Wette bestätigen</button>
-    <button class="secondary" id="spReshuffleBtn" style="display:none;">Andere Teams</button>
     <div class="waiting" id="lobbyWait" style="display:none;"><span class="spin"></span>Warte auf die anderen…</div>
     <div id="lobbyPlistSection">
       <h2 class="sec">Mitspieler</h2>
@@ -266,8 +346,14 @@
     messagingSenderId: "905442713656",
     appId: "1:905442713656:web:13a084c7706ee177ff06cd"
   };
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.database();
+  let firebaseReady=false, db=null;
+  try{
+    firebase.initializeApp(firebaseConfig);
+    db=firebase.database();
+    firebaseReady=true;
+  }catch(e){
+    console.error("Firebase konnte nicht geladen werden — Multiplayer ist deaktiviert, Einzelspieler funktioniert trotzdem:", e);
+  }
 
   /* ---------------- Spieler-Identität (lokal, pro Gerät) ---------------- */
   let uid = localStorage.getItem("tipico_uid");
@@ -305,6 +391,13 @@
   const SITUATION_INTERVAL=1500;
 
   /* ---------------- Poisson / Quoten ---------------- */
+  function shuffle(arr){
+    for(let i=arr.length-1;i>0;i--){
+      const j=Math.floor(Math.random()*(i+1));
+      [arr[i],arr[j]]=[arr[j],arr[i]];
+    }
+    return arr;
+  }
   function poissonDist(lambda,maxK){const arr=[Math.exp(-lambda)];for(let k=1;k<=maxK;k++)arr.push(arr[k-1]*lambda/k);return arr;}
   function outcomeProbs(lh,la){
     const H=poissonDist(lh,9), A=poissonDist(la,9);
@@ -318,22 +411,68 @@
   function initials(name){
     return name.split(" ").filter(w=>w.length>1||/^[A-ZÄÖÜ]/.test(w)).slice(0,2).map(w=>w[0]).join("").toUpperCase()||name.slice(0,2).toUpperCase();
   }
+  function oddsFor(home,away){
+    const lh=home.lambda*1.08, la=away.lambda;
+    const p=outcomeProbs(lh,la);
+    const totalLambda=lh+la;
+    const pUnder25=poissonCdf(totalLambda,2), pUnder35=poissonCdf(totalLambda,3);
+    return {
+      h:probToOdd(p.pHome), x:probToOdd(p.pDraw), a:probToOdd(p.pAway),
+      o25:probToOdd(1-pUnder25), u25:probToOdd(pUnder25),
+      o35:probToOdd(1-pUnder35), u35:probToOdd(pUnder35)
+    };
+  }
   function drawMatch(){
     const pool=TEAM_POOL.slice();
     const i=Math.floor(Math.random()*pool.length);
     const home=pool.splice(i,1)[0];
     const j=Math.floor(Math.random()*pool.length);
     const away=pool.splice(j,1)[0];
+    return {home,away,odds:oddsFor(home,away),seed:Math.floor(Math.random()*2147483647)};
+  }
+  function drawFixtureList(n){
+    const pool=shuffle(TEAM_POOL.slice());
+    const fixtures=[];
+    for(let i=0;i+1<pool.length && fixtures.length<n;i+=2){
+      const home=pool[i], away=pool[i+1];
+      fixtures.push({home,away,odds:oddsFor(home,away),seed:Math.floor(Math.random()*2147483647)});
+    }
+    return fixtures;
+  }
+  // Live-Quoten: bereits erzielte Tore fix, verbleibende Spielzeit skaliert die Resttore-Erwartung
+  function liveOutcomeProbs(remLh, remLa, curH, curA, maxExtra){
+    const RH=poissonDist(remLh,maxExtra), RA=poissonDist(remLa,maxExtra);
+    let pHome=0,pDraw=0,pAway=0;
+    for(let i=0;i<=maxExtra;i++) for(let j=0;j<=maxExtra;j++){
+      const p=RH[i]*RA[j];
+      const fh=curH+i, fa=curA+j;
+      if(fh>fa) pHome+=p; else if(fh===fa) pDraw+=p; else pAway+=p;
+    }
+    const sum=pHome+pDraw+pAway;
+    return {pHome:pHome/sum,pDraw:pDraw/sum,pAway:pAway/sum};
+  }
+  function buildLiveMatch(){
+    const pool=TEAM_POOL.slice();
+    const i=Math.floor(Math.random()*pool.length);
+    const home=pool.splice(i,1)[0];
+    const j=Math.floor(Math.random()*pool.length);
+    const away=pool.splice(j,1)[0];
+    const minute=35+Math.floor(Math.random()*(75-35+1));
     const lh=home.lambda*1.08, la=away.lambda;
-    const p=outcomeProbs(lh,la);
-    const totalLambda=lh+la;
-    const pUnder25=poissonCdf(totalLambda,2), pUnder35=poissonCdf(totalLambda,3);
-    const odds={
-      h:probToOdd(p.pHome), x:probToOdd(p.pDraw), a:probToOdd(p.pAway),
-      o25:probToOdd(1-pUnder25), u25:probToOdd(pUnder25),
-      o35:probToOdd(1-pUnder35), u35:probToOdd(pUnder35)
-    };
-    return {home,away,odds,seed:Math.floor(Math.random()*2147483647)};
+    const elapsedFrac=minute/90;
+    const curH=poissonSample(lh*elapsedFrac), curA=poissonSample(la*elapsedFrac);
+    const remFrac=Math.max(0.05,(90-minute)/90);
+    const remLh=lh*remFrac, remLa=la*remFrac;
+    const p=liveOutcomeProbs(remLh,remLa,curH,curA,8);
+    const odds={h:probToOdd(p.pHome), x:probToOdd(p.pDraw), a:probToOdd(p.pAway)};
+    return {home,away,odds,seed:Math.floor(Math.random()*2147483647),minute,curH,curA};
+  }
+  function poissonSample(lambda){
+    const arr=poissonDist(lambda,10);
+    const r=Math.random();
+    let cum=0;
+    for(let k=0;k<arr.length;k++){cum+=arr[k]; if(r<=cum) return k;}
+    return arr.length-1;
   }
   function teamColors(home,away){
     const homeColor=home.colors[0];
@@ -354,11 +493,112 @@
 
   $("modeSingleBtn").addEventListener("click",()=>{
     mode="single";
-    startSingleplayerSetup();
+    showScreen("s-home");
   });
   $("modeMultiBtn").addEventListener("click",()=>{
+    if(!firebaseReady){
+      alert("Multiplayer ist gerade nicht erreichbar (Verbindungsproblem mit Firebase). Prüfe deine Internetverbindung oder deaktiviere kurz einen Werbeblocker — Einzelspieler funktioniert trotzdem.");
+      return;
+    }
     mode="multi";
-    showScreen("s-name");
+    showScreen("s-home");
+  });
+
+  /* ---------------- Sport-Home (Tipico-Style) ---------------- */
+  $("homeSwitchModeLink").addEventListener("click",(e)=>{ e.preventDefault(); location.reload(); });
+
+  $("iconFootball").addEventListener("click",()=>{
+    if(mode==="single"){ showMatchList(); }
+    else { showScreen("s-name"); }
+  });
+  $("iconLive").addEventListener("click",()=>{
+    if(mode!=="single"){ return; } // Live-Wetten vorerst nur im Einzelspieler-Modus
+    showLiveMatch();
+  });
+  // Basketball/Tennis/Eishockey: bewusst ohne Klick-Handler — soll vorerst nichts passieren
+
+  $("matchlistBackLink").addEventListener("click",(e)=>{ e.preventDefault(); showScreen("s-home"); });
+  $("liveBackLink").addEventListener("click",(e)=>{ e.preventDefault(); showScreen("s-home"); });
+
+  function showMatchList(){
+    const fixtures=drawFixtureList(5);
+    const body=$("matchListBody"); body.innerHTML="";
+    fixtures.forEach(fx=>{
+      const row=document.createElement("div");
+      row.className="matchrow";
+      row.innerHTML=`
+        <div class="mteams"><div class="t1">${fx.home.name}</div><div class="t2">${fx.away.name}</div></div>
+        <div class="modds">
+          <div class="mo"><div class="ml">1</div><div class="mv">${fx.odds.h.toFixed(2)}</div></div>
+          <div class="mo"><div class="ml">X</div><div class="mv">${fx.odds.x.toFixed(2)}</div></div>
+          <div class="mo"><div class="ml">2</div><div class="mv">${fx.odds.a.toFixed(2)}</div></div>
+        </div>`;
+      row.addEventListener("click",()=>{
+        spRoom={home:fx.home, away:fx.away, odds:fx.odds, seed:fx.seed, players:{}};
+        resetBetControls();
+        $("confirmBetBtn").textContent="Wette platzieren";
+        $("lobbyCodeRow").style.display="none";
+        $("lobbyPlistSection").style.display="none";
+        fillMatchupAndOdds(spRoom);
+        showScreen("s-lobby");
+      });
+      body.appendChild(row);
+    });
+    showScreen("s-matchlist");
+  }
+
+  /* ---------------- Live-Wette ---------------- */
+  let liveMatch=null, liveSelectedPick=null, liveStake=3;
+
+  function showLiveMatch(){
+    liveMatch=buildLiveMatch();
+    liveSelectedPick=null; liveStake=3; $("liveStakeInput").value=3;
+    $("liveBetBtn").disabled=true;
+    $("livePayoutHint").innerHTML="Wähle einen Tipp aus, um den Gewinn zu sehen.";
+    document.querySelectorAll("#liveOddsRow .odd-btn").forEach(b=>b.classList.remove("selected"));
+
+    const c=teamColors(liveMatch.home, liveMatch.away);
+    $("liveCard").innerHTML=`
+      <div class="ldot"><span class="dot"></span>LIVE</div>
+      <span class="lminute">${liveMatch.minute}'</span>
+      <div class="lteams">
+        <div class="lteam" style="color:${c.homeColor==='#000000'?'#fff':c.homeColor};">${liveMatch.home.name}</div>
+        <div class="lscore">${liveMatch.curH} : ${liveMatch.curA}</div>
+        <div class="lteam" style="color:${c.awayColor==='#000000'?'#fff':c.awayColor};">${liveMatch.away.name}</div>
+      </div>`;
+    $("liveOdd1").textContent=liveMatch.odds.h.toFixed(2);
+    $("liveOddX").textContent=liveMatch.odds.x.toFixed(2);
+    $("liveOdd2").textContent=liveMatch.odds.a.toFixed(2);
+    showScreen("s-liveinfo");
+  }
+  document.querySelectorAll("#liveOddsRow .odd-btn").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      document.querySelectorAll("#liveOddsRow .odd-btn").forEach(b=>b.classList.remove("selected"));
+      btn.classList.add("selected");
+      liveSelectedPick=btn.dataset.pick;
+      updateLiveHint();
+      $("liveBetBtn").disabled=false;
+    });
+  });
+  $("liveStakeInput").addEventListener("input",()=>{
+    liveStake=Math.max(1,parseInt($("liveStakeInput").value||"1",10));
+    updateLiveHint();
+  });
+  function updateLiveHint(){
+    if(!liveSelectedPick){ $("livePayoutHint").innerHTML="Wähle einen Tipp aus, um den Gewinn zu sehen."; return; }
+    const odd={"1":liveMatch.odds.h,"X":liveMatch.odds.x,"2":liveMatch.odds.a}[liveSelectedPick];
+    const gain=Math.round(liveStake*odd);
+    $("livePayoutHint").innerHTML=`Bei Sieg: <b>${gain} Schlücke</b> zu verteilen · bei Verlust: <b>${liveStake} Schlücke</b> selbst trinken.`;
+  }
+  $("liveBetBtn").addEventListener("click",()=>{
+    if(!liveSelectedPick) return;
+    spRoom={
+      home:liveMatch.home, away:liveMatch.away, odds:liveMatch.odds, seed:liveMatch.seed,
+      players:{[uid]:{name:"Du", pick:liveSelectedPick, stake:liveStake, confirmedBet:true}}
+    };
+    spRoom.matchStartAt=Date.now()+2500;
+    matchStarted=true;
+    startMatchSync(spRoom, {minute:liveMatch.minute, curH:liveMatch.curH, curA:liveMatch.curA});
   });
 
   /* ---------------- Screen 1: Name (nur Multiplayer) ---------------- */
@@ -486,19 +726,7 @@
     $("lOddO35").textContent=room.odds.o35.toFixed(2); $("lOddU35").textContent=room.odds.u35.toFixed(2);
   }
 
-  /* ---------------- Einzelspieler: lokale Lobby ohne Firebase ---------------- */
-  function startSingleplayerSetup(){
-    const m=drawMatch();
-    spRoom={home:m.home, away:m.away, odds:m.odds, seed:m.seed, players:{}};
-    resetBetControls();
-    $("confirmBetBtn").textContent="Wette platzieren";
-    $("lobbyCodeRow").style.display="none";
-    $("lobbyPlistSection").style.display="none";
-    $("spReshuffleBtn").style.display="block";
-    fillMatchupAndOdds(spRoom);
-    showScreen("s-lobby");
-  }
-  $("spReshuffleBtn").addEventListener("click", startSingleplayerSetup);
+  /* ---------------- Einzelspieler: lokale Lobby ohne Firebase (Einstieg über Match-Liste/Live) ---------------- */
   $("switchModeLink").addEventListener("click",(e)=>{ e.preventDefault(); location.reload(); });
 
   function renderLobby(room){
@@ -506,7 +734,6 @@
     $("confirmBetBtn").textContent="Wette bestätigen";
     $("lobbyCodeRow").style.display="flex";
     $("lobbyPlistSection").style.display="block";
-    $("spReshuffleBtn").style.display="none";
     $("lobbyCode").textContent=roomCode;
     fillMatchupAndOdds(room);
 
@@ -767,7 +994,7 @@
   /* ---------------- Match-Start: synchronisiert über matchStartAt + Seed ---------------- */
   let myPick=null, myStake=0, myOdd=1, curRoomOdds=null;
 
-  function startMatchSync(room){
+  function startMatchSync(room, live){
     mHome=room.home; mAway=room.away; curRoomOdds=room.odds;
     const c=teamColors(mHome,mAway); mHomeColor=c.homeColor; mAwayColor=c.awayColor;
     document.documentElement.style.setProperty("--home-color",mHomeColor);
@@ -782,13 +1009,20 @@
     const isLight=cc=>cc.toLowerCase()==="#ffffff"||cc.toLowerCase()==="#fde100";
     $("mHomeName").classList.add(isLight(mHomeColor)?"outline-text-dark":"outline-text");
     $("mAwayName").classList.add(isLight(mAwayColor)?"outline-text-dark":"outline-text");
-    $("mScore").textContent="0:0"; $("matchLog").innerHTML="";
 
     rng=mulberry32(room.seed);
     stoppageMinutes=rng()<0.5?3:4;
     MATCH_SECONDS=REGULAR_SECONDS+stoppageMinutes*STOPPAGE_MIN_SECONDS;
-    scoreH=0; scoreA=0; pendingQueue=[]; lastSituation=null; halftimeShown=false;
-    cardPenalty={home:1,away:1};
+    pendingQueue=[]; lastSituation=null; cardPenalty={home:1,away:1};
+    $("matchLog").innerHTML="";
+
+    if(live){
+      scoreH=live.curH; scoreA=live.curA;
+      halftimeShown = live.minute>=45;
+    } else {
+      scoreH=0; scoreA=0; halftimeShown=false;
+    }
+    $("mScore").textContent=`${scoreH}:${scoreA}`;
 
     showScreen("s-match");
     drawPitchBase();
@@ -796,8 +1030,13 @@
     const delay=room.matchStartAt-Date.now();
     function kickoff(){
       $("kickoffOverlay").style.display="none";
-      startTime=Date.now();
-      renderSituation({type:"kickoff"}); logSituation({type:"kickoff"});
+      startTime = live ? Date.now()-live.minute*REGULAR_MIN_SECONDS*1000 : Date.now();
+      if(live){
+        renderSituation({type:"kickoff"});
+        logExtra(null, `Liveübertragung startet bei ${formatMinute(live.minute)} — Spielstand ${live.curH}:${live.curA}`);
+      } else {
+        renderSituation({type:"kickoff"}); logSituation({type:"kickoff"});
+      }
       clockTimer=setInterval(tickClock,250);
       situationTimer=setTimeout(runTick,SITUATION_INTERVAL);
     }
@@ -805,7 +1044,7 @@
       $("kickoffOverlay").style.display="flex";
       const iv=setInterval(()=>{
         const rem=Math.ceil((room.matchStartAt-Date.now())/1000);
-        if(rem>0){ $("kickoffOverlay").textContent="Anpfiff in "+rem; }
+        if(rem>0){ $("kickoffOverlay").textContent=(live?"Live-Übertragung startet in ":"Anpfiff in ")+rem; }
         else { clearInterval(iv); kickoff(); }
       },200);
     } else {
@@ -842,7 +1081,7 @@
 
   $("resultNextBtn").addEventListener("click",()=>{
     if(mode==="single"){
-      startSingleplayerSetup();
+      showScreen("s-home");
       return;
     }
     db.ref(`rooms/${roomCode}/players/${uid}/confirmedResult`).set(true);
